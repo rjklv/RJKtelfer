@@ -1,0 +1,34 @@
+[Eagle]
+Version="07 04 00"
+Platform="Windows"
+Serial="62191E841E-LSR-WLM-1EL"
+Globals="Globals"
+Desktop="Desktop"
+
+[Globals]
+AutoSaveProject=1
+UsedLibrary="c:/eagle/projects/JDat/RJK/RJK.lbr"
+UsedLibrary="c:/eagle/lib/SparkFun/SparkFun-LED.lbr"
+UsedLibrary="c:/eagle/lib/SparkFun/SparkFun-Boards.lbr"
+UsedLibrary="c:/eagle/lib/Andrejs/con-smd-adatas.lbr"
+UsedLibrary="C:/eagle/lib/Andrejs/kingbright.lbr"
+UsedLibrary="c:/eagle/lib/SparkFun/SparkFun-DiscreteSemi.lbr"
+UsedLibrary="C:/eagle/lib/Andrejs/arduino.lbr"
+UsedLibrary="c:/eagle/lib/element14/e14_Rpi2_RevA.lbr"
+UsedLibrary="c:/eagle/lib/Andrejs/rpi-cam.lbr"
+UsedLibrary="C:/eagle/lib/Andrejs/lemona-dc-dc.lbr"
+UsedLibrary="c:/eagle/lib/unused/74xx-eu.lbr"
+UsedLibrary="c:/eagle/lib/element14/Texas Instruments_By_element14_Batch_1.lbr"
+UsedLibrary="c:/eagle/lib/JDat/Arduino-clone.lbr"
+UsedLibrary="c:/eagle/lib/SparkFun/SparkFun-Passives.lbr"
+UsedLibrary="c:/eagle/lib/SparkFun/SparkFun-Electromechanical.lbr"
+
+[Win_1]
+Type="Control Panel"
+Loc="0 2 1365 720"
+State=3
+Number=0
+
+[Desktop]
+Screen="1366 768"
+Window="Win_1"
