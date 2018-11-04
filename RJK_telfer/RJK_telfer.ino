@@ -23,7 +23,7 @@
 #define sysStateBoot        0
 #define sysStateWork        1
 #define sysStateCalibrate   2
-
+//#define sysStateStandalone  3
 
 
 #define enc1ClkPin 2
@@ -57,7 +57,7 @@ unsigned long blankNext;
 
 uint16_t dmxaddr = 1;
 uint16_t trueDmxAddr = 1;
-uint8_t dmxMode = true;
+//uint8_t dmxMode = true;
 uint8_t blankScreen=false;
 
 uint8_t dmxOk;
@@ -101,7 +101,7 @@ void setup() {
   EEPROM.get(0, trueDmxAddr);
   trueDmxAddr = constrain(trueDmxAddr, 1, 512);
 
-  EEPROM.get(2, dmxMode);
+  //EEPROM.get(2, dmxMode);
 
   EEPROM.get(3, calibration1);
   EEPROM.get(5, calibration2);
@@ -110,7 +110,7 @@ void setup() {
   EEPROM.get(9, position2);
 
   //rawButtons = doDigit(dig3,dig2,dig1,dig0,dmxOk);
-  rawButtons = doDigit(1,2,3,4,false);
+  //rawButtons = doDigit(1,2,3,4,false);
 
   attachInterrupt( digitalPinToInterrupt( enc1ClkPin ), enc1irq, RISING);
 
@@ -119,6 +119,7 @@ void setup() {
   //while(true){
   //  delay(1000);
   //}
+  sysState = sysStateWork;
   blankNext = millis() + blankTime;
 }
 
@@ -186,25 +187,25 @@ void dmxToPosition() {
   #endif
 }
 enum _menuState{
-  work=0,
+  menuWork=0,
     menuAddress=1,
       menuAddressSet=2,
     menuCal=3,
       menuCalEnd=4,
     menuExit=5,
-  sleep=6,
+  menuSleep=6,
 };
 
-uint8_t menuState=work;
+uint8_t menuState=menuWork;
 
 void menuStateMachine() {
   switch (menuState){
-    case sleep:
+    case menuSleep:
       dig0=10;
       dig1=10;
       dig2=10;
       dig3=10;
-    case work:
+    case menuWork:
       if (blankScreen==true){
         return;
       }
@@ -213,26 +214,26 @@ void menuStateMachine() {
         return;
       }
       if (enterBut.wasPressed()) {
-        menuState=work;
+        menuState=menuWork;
         return;
       }
-      if (dmxMode){
+      //if ( sysState != sysStateStandalone ){
         dig3=10;
         numberToDigits( trueDmxAddr );
         //numberToDigits( DMXSerial.read( trueDmxAddr ));
         //dmxValueToDisplay();
         
-      } else {
-        dig3='Q'-54;
-        dig2='Q'-54;
-        dig1='Q'-54;
-        dig0='Q'-54;        
-      }
+      //} else {
+      //  dig3='Q'-54;
+      //  dig2='Q'-54;
+      //  dig1='Q'-54;
+      //  dig0='Q'-54;        
+      //}
       return;
 //***************************************************************************            
     case menuAddress:
       if (modeBut.wasPressed()) {
-        menuState=work;
+        menuState=menuWork;
         return;
       }
       if (enterBut.wasPressed()) {
@@ -257,7 +258,7 @@ void menuStateMachine() {
 //***************************************************************************      
     case menuAddressSet:
       if (modeBut.wasPressed()) {
-        menuState=work;
+        menuState=menuWork;
         return;
       }
       if (enterBut.wasPressed()) {
@@ -309,7 +310,7 @@ void menuStateMachine() {
 //***************************************************************************
     case menuCal:
       if (modeBut.wasPressed()) {
-        menuState=work;
+        menuState=menuWork;
         return;
       }
       if (enterBut.wasPressed()) {
@@ -338,21 +339,36 @@ void menuStateMachine() {
 //***************************************************************************
     case menuCalEnd:
       if (modeBut.wasPressed()) {
-        menuState=work;
+        //menuState=work;
         return;
       }
       if (enterBut.wasPressed()) {
         sysState = sysStateWork;
         if ( prewSysState == sysStateCalibrate ){
-          position1 = calibration1;
-          position2 = calibration2;
+          if ( calibration1 == 0) {
+            EEPROM.get(3, calibration1);  
+          } else {
+            EEPROM.put(3, calibration1);
+          }
+          
+          if ( calibration2 == 0) {
+            EEPROM.get(5, calibration2);            
+          } else {
+            EEPROM.put(5, calibration2);
+          }
 
-          EEPROM.put(3, calibration1);
-          EEPROM.put(5, calibration2);
+          position1 = calibration1;
           EEPROM.put(7, position1);
+
+          position2 = calibration2;
           EEPROM.put(9, position2);
 
-          extButtonPSUoff();
+          if ( dmxOk ) {
+            extButtonPSUoff();
+          } else {
+            extButtonPSUon();
+          }
+          //extButtonPSUoff();
           
           #ifdef debug
           dmxPosition1 = calibration1;
@@ -360,7 +376,7 @@ void menuStateMachine() {
           #endif
           prewSysState=sysState;
         }
-          menuState = menuCal; 
+          menuState = menuWork; 
         return;
       }
       if (upBut.wasPressed()) {
@@ -381,11 +397,11 @@ void menuStateMachine() {
 //***************************************************************************
     case menuExit:
       if (modeBut.wasPressed()) {
-        menuState=work;
+        menuState=menuWork;
         return;
       }
       if (enterBut.wasPressed()) {
-        menuState=work;
+        menuState=menuWork;
         return;
       }
       if (upBut.wasPressed()) {
@@ -418,10 +434,15 @@ void loop() {
   #endif
 
   #ifdef debug
-  lastPacket = 500;
+  lastPacket = 600;
   dmxOk=true;
   #endif
-  
+
+  if ( dmxOk ) {
+    extButtonPSUoff();
+  } else {
+    extButtonPSUon();
+  }
   rawButtons = doDigit(dig3,dig2,dig1,dig0,dmxOk);
   
   modeBut.read(rawButtons);
@@ -430,25 +451,24 @@ void loop() {
   enterBut.read(rawButtons);
 
   dmxToPosition();
-  
   menuStateMachine();
 
-  if ( ( menuState!=sleep ) && ( enterBut.isChanged() || downBut.isChanged() || upBut.isChanged() ) ) {
+  if ( ( menuState != menuSleep ) && ( enterBut.isChanged() || downBut.isChanged() || upBut.isChanged() ) ) {
     //menuState=work;
     blankNext = millis() + blankTime;
     blankScreen=false;
   }
   
   if ( modeBut.isChanged()) {
-    if ( menuState==sleep ) {
-      menuState=work;
+    if ( menuState == menuSleep ) {
+      menuState=menuWork;
     }
     blankNext = millis() + blankTime;
     blankScreen=false;
   } else {    
     if (millis() >= blankNext) {
       //doBlankScreen
-      menuState=sleep;
+      menuState=menuSleep;
       blankScreen=true;
       dig0=10;
       dig1=10;
@@ -463,15 +483,16 @@ void loop() {
     Serial.print( "Return: " );
     Serial.println( a );
     switch (a) {
+ /*
       case (-1* sysStateWork):
         sysState = sysStateWork;
         if ( prewSysState == sysStateCalibrate ){
-          position1 = calibration1;
-          position2 = calibration2;
-          prewSysState=sysState;
+          //position1 = calibration1;
+          //position2 = calibration2;
+          //prewSysState=sysState;
         }
         break;
-/*
+
       case (-1* sysStateCalibrate):
         sysState = sysStateCalibrate;
         calibration1=0;
@@ -526,17 +547,23 @@ void loop() {
     oldenc1count = enc1count;
   }
 
-/*
+
   if ( oldenc2count != enc2count ) {
+/*
     Serial.print( enc1count );
     Serial.print("\t");
     Serial.println( enc2count );
+*/
     oldenc2count = enc2count;
   }
-*/
 
   if ( sysState == sysStateWork ) {
-    extButtonPSUoff();
+    if ( dmxOk ) {
+      extButtonPSUoff();
+    } else {
+      extButtonPSUon();
+    }
+    //extButtonPSUoff();
 
     if ( oldPosition1 != position1 ) {
       EEPROM.put(7, position1);
@@ -597,6 +624,8 @@ void loop() {
 
     
   }
+
+  
 }
 
 volatile uint8_t tmp1DirPin;

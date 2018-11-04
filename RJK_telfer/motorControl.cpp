@@ -10,6 +10,8 @@ void setupMotorIOpins(){
   pinMode( telferPSUpin, OUTPUT );
 
   pinMode( extButtonPSUpin, OUTPUT );
+
+  telferPSUon();
   
   allStop();
 }
@@ -23,14 +25,14 @@ void telferPSUoff() {
 }
 
 void extButtonPSUon() {
-  digitalWrite( extButtonPSUpin, HIGH );
+  digitalWrite( extButtonPSUpin, LOW );
 }
 
 void extButtonPSUoff() {
-  digitalWrite( extButtonPSUpin, LOW );
+  digitalWrite( extButtonPSUpin, HIGH );
 }
 void allStop(){
-  telferPSUoff();
+  //telferPSUoff();
   digitalWrite( telf1EnaPin, LOW );
   digitalWrite( telf2EnaPin, LOW );
 }
