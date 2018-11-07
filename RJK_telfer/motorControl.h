@@ -3,14 +3,14 @@
 
 #include <Arduino.h>
 
-#define telf1EnaPin 13
-#define telf1DirPin 12
+#define telf2EnaPin 13
+#define telf2DirPin 12
 
-#define telf2EnaPin 10
-#define telf2DirPin 11
+#define telf1EnaPin 10
+#define telf1DirPin 11
 
-#define telferPSUpin A4
-#define extButtonPSUpin A5
+#define telferPSUpin A5
+#define extButtonPSUpin A4
 
 void setupMotorIOpins(void);
 
