@@ -230,8 +230,8 @@ void menuStateMachine() {
       }
       //if ( sysState != sysStateStandalone ){
         dig3=10;
-        //numberToDigits( trueDmxAddr );
-        numberToDigits( lowByte(position2) );
+        numberToDigits( trueDmxAddr );
+        //numberToDigits( lowByte(position2) );
         //numberToDigits( position1 );
         //numberToDigits( calibration1 );
         //numberToDigits( DMXSerial.read( trueDmxAddr ));
