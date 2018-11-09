@@ -3,7 +3,7 @@
 #define telfer1treshold 5
 #define telfer2treshold 5
 
-#define relayDelay 100
+#define relayDelay 1
 
 //#define whiteMax 255          //maximum intensity for ledPin4 (white channel)
 
@@ -194,8 +194,13 @@ void dmxToPosition() {
 
         dmxPosition1 = map(dmxValue1, 0, 65535, 0, calibration1);
         dmxPosition2 = map(dmxValue2, 0, 65535, 0, calibration2);
+      } else {
+        dmxPosition1 = position1;
+        dmxPosition2 = position2;
       }
   #endif
+
+      
 }
 enum _menuState{
   menuWork=0,
@@ -330,6 +335,8 @@ void menuStateMachine() {
       if (enterBut.wasPressed()) {
         menuState=menuCalEnd;
         sysState = sysStateCalibrate;
+        telf1Stop();
+        telf2Stop();
         calibration1=0;
         calibration2=0;
         extButtonPSUon();
@@ -346,7 +353,10 @@ void menuStateMachine() {
       }
 
       extButtonPSUon();
-      
+
+      telf1Stop();
+      telf2Stop();
+        
       dig3='C'-54;
       dig2='A'-54;
       dig1='L'-54;
@@ -355,7 +365,7 @@ void menuStateMachine() {
 //***************************************************************************
     case menuCalEnd:
       if (modeBut.wasPressed()) {
-        //menuState=work;
+        menuState = menuCal;
         return;
       }
       if (enterBut.wasPressed()) {
@@ -441,8 +451,6 @@ void menuStateMachine() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  //relaySequence();
 
   #ifndef debug
   lastPacket = DMXSerial.noDataSince();
@@ -451,17 +459,9 @@ void loop() {
 
   #ifdef debug
   lastPacket = 100;
-  //dmxOk=true;
+  dmxOk=true;
   //dmxOk=false;
   #endif
-
-/*
-  if ( dmxOk ) {
-    extButtonPSUoff();
-  } else {
-    extButtonPSUon();
-  }
-*/
   
   rawButtons = doDigit(dig3,dig2,dig1,dig0,dmxOk);
   
@@ -482,11 +482,9 @@ void loop() {
   if ( ( menuState == menuCal ) || ( menuState == menuCalEnd ) ) {
     sysState = sysStateCalibrate;
     extButtonPSUon();
-    allStop();
+    //allStop();
     blankNext = millis() + blankTime;
     blankScreen=false;
-  } else {
-    extButtonPSUoff();
   }
   
   if ( modeBut.isChanged()) {
@@ -513,23 +511,7 @@ void loop() {
     Serial.print( "Return: " );
     Serial.println( a );
     switch (a) {
- /*
-      case (-1* sysStateWork):
-        sysState = sysStateWork;
-        if ( prewSysState == sysStateCalibrate ){
-          //position1 = calibration1;
-          //position2 = calibration2;
-          //prewSysState=sysState;
-        }
-        break;
 
-      case (-1* sysStateCalibrate):
-        sysState = sysStateCalibrate;
-        calibration1=0;
-        calibration2=0;
-        prewSysState=sysState;
-        break;
-*/
       case 0:
         break;
       default:
@@ -559,42 +541,32 @@ void loop() {
 
   }
   #endif
-/*
-  if ( menuState == menuCalBegin ) {
-        sysState = sysStateCalibrate;
-        calibration1=0;
-        calibration2=0;
-        prewSysState=sysState;
-  }
-*/
-
   
   if ( oldenc1count != enc1count ) {
 
     #ifdef debug
-    Serial.print( "State: " );
-    Serial.print( sysState );
-    //Serial.print( "\t\tEnc1:" );
-    //Serial.print( enc1count );
-    //Serial.print( "\t\tEnc2: " );
-    //Serial.print( enc2count );
-    Serial.print( "\t\tPos1: " );
-    Serial.print( position1 );
-    Serial.print( "\t\tPos2: " );
-    Serial.print( position2 );
-    Serial.print( "\t\tCal1: " );
-    Serial.print( calibration1 );
-    Serial.print( "\t\tCal2: " );
-    Serial.print( calibration2 );
-    Serial.print( "\t\tDMX1: " );
-    Serial.print( dmxPosition1 );
-    Serial.print( "\t\tDMX2: " );
-    Serial.println( dmxPosition2 );
+      Serial.print( "State: " );
+      Serial.print( sysState );
+      //Serial.print( "\t\tEnc1:" );
+      //Serial.print( enc1count );
+      //Serial.print( "\t\tEnc2: " );
+      //Serial.print( enc2count );
+      Serial.print( "\t\tPos1: " );
+      Serial.print( position1 );
+      Serial.print( "\t\tPos2: " );
+      Serial.print( position2 );
+      Serial.print( "\t\tCal1: " );
+      Serial.print( calibration1 );
+      Serial.print( "\t\tCal2: " );
+      Serial.print( calibration2 );
+      Serial.print( "\t\tDMX1: " );
+      Serial.print( dmxPosition1 );
+      Serial.print( "\t\tDMX2: " );
+      Serial.println( dmxPosition2 );
     #endif
     
     oldenc1count = enc1count;
   }
-
 
   if ( oldenc2count != enc2count ) {
  
@@ -623,12 +595,16 @@ void loop() {
   }
 
   if ( sysState == sysStateWork ) {
-    //if ( dmxOk ) {
-    //  extButtonPSUoff();
-    //} else {
-    //  extButtonPSUon();
-    //}
-    extButtonPSUoff();
+    if ( dmxOk ) {
+      extButtonPSUoff();
+    } else {
+      //allStop();
+      telf1Stop();
+      telf2Stop();      
+      telferPSUon();
+      extButtonPSUon();
+    }
+    //extButtonPSUoff();
 
     if ( oldPosition1 != position1 ) {
       EEPROM.put(7, position1);
@@ -641,9 +617,11 @@ void loop() {
     oldPosition1=position1;
     oldPosition2=position2;
 
-    telfer1Logic();
-    telfer2Logic();
-    
+    if ( dmxOk ) {
+      telfer1Logic();
+      telfer2Logic();
+    }
+    //delay( relayDelay );
   }
 
   
@@ -651,68 +629,46 @@ void loop() {
 
 void telfer1Logic() {
     if ( position1 < ( -telfer1treshold) ) {
-      //telf1Stop();
       telf1fwd();
-      //return;
     }
       
     if ( position1 > (calibration1 + telfer1treshold) ) {
-      allStop();
-      //telf1Stop();
       telf1rev();
-      //delay(relayDelay);
-      //return;
     }
 
     if ( ( position1 > (dmxPosition1 - telfer1treshold) ) && ( position1 < (dmxPosition1 + telfer1treshold) ) ) {
       telf1Stop();
-      
-      //delay(500);
-      //return;
     }
+
     if ( position1 < (dmxPosition1 - telfer1treshold) ) {
       telf1fwd();      
-      //return;
     }
   
     if (position1 > (dmxPosition1 + telfer1treshold)  ) {
       telf1rev();
-      //return;
     }
 
 }
 
 void telfer2Logic() {
     if ( position2 < (-telfer2treshold) ) {
-      //telf2Stop();
-      //delay(relayDelay);
       telf2fwd();
-      //return;
     }
       
     if ( position2 > (calibration2 + telfer2treshold) ) {
-      allStop();
-      telf2Stop();
-      //delay(relayDelay);
       telf2rev();
-      //delay(relayDelay);
-      //return;
     }
 
     if ( ( position2 > (dmxPosition2 - telfer2treshold) ) && ( position2 < (dmxPosition2 + telfer2treshold) ) ) {
       telf2Stop();
-      
-      //delay(500);
-      //return;
     }
+
     if ( position2 < (dmxPosition2 - telfer2treshold) ) {
       telf2fwd();      
-      //return;
     }
   
     if (position2 > (dmxPosition2 + telfer2treshold)  ) {
       telf2rev();
-      //return;
     }
 
 }
